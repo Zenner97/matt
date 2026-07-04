@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Voice Memo Trainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #1e1a17;
+    --surface: #2a241f;
+    --surface-2: #352d26;
+    --surface-3: #443a30;
+    --accent: #e8954b;
+    --accent-soft: rgba(232,148,75,0.16);
+    --accent-2: #c4633b;
+    --text: #f4ecdf;
+    --text-dim: #b8ac9c;
+    --rec-red: #e25c45;
+    --good: #7c8a6e;
+    --radius: 18px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: radial-gradient(120% 120% at 20% -10%, #29231f 0%, var(--bg) 55%);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    min-height: 100vh;
+    display:flex;
+    justify-content:center;
+    padding: 28px 16px 60px;
+    -webkit-user-select: none;
+    user-select: none;
+    position:relative;
+    overflow-x: hidden;
+  }
+  body.settings-open{
+    overflow:hidden;
+  }
+  .app{
+    width:100%;
+    max-width: 480px;
+  }
+  header{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom: 6px;
+  }
+  .brand{display:flex; align-items:center; gap:10px;}
+  .rec-dot{
+    width:10px;height:10px;border-radius:50%;
+    background: var(--rec-red);
+    box-shadow: 0 0 0 0 rgba(226,92,69,0.6);
+    animation: pulse 2.4s infinite;
+    flex-shrink: 0;
+  }
+  @keyframes pulse{
+    0%{ box-shadow: 0 0 0 0 rgba(226,92,69,0.55); }
+    70%{ box-shadow: 0 0 0 8px rgba(226,92,69,0); }
+    100%{ box-shadow: 0 0 0 0 rgba(226,92,69,0); }
+  }
+  .brand-text{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+  h1{
+    font-family:'Lora', serif;
+    font-weight:600;
+    font-size: 26px;
+    margin: 2px 0 0;
+    line-height: 1.2;
+  }
+  .gear-btn{
+    background: var(--surface-2);
+    border: 1px solid var(--surface-3);
+    color: var(--text-dim);
+    width: 38px; height: 38px;
+    border-radius: 12px;
+    font-size: 16px;
+    cursor:pointer;
+    flex-shrink:0;
+    transition: background .15s, color .15s, transform .15s;
+    -webkit-appearance: none;
+    appearance: none;
+    padding: 0;
+  }
+  .gear-btn:hover{ color: var(--text); background: var(--surface-3); }
+  .gear-btn:active{ transform: scale(0.94); }
+
+  .intro{
+    color: var(--text-dim);
+    font-size: 14px;
+    line-height: 1.55;
+    margin: 10px 0 22px;
+  }
+
+  .modal-overlay{
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(4px);
+    display: none;
+    z-index: 1000;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .modal-overlay.open{ display:flex; align-items:flex-end; }
+
+  .settings-panel{
+    background: var(--surface);
+    border: 1px solid var(--surface-3);
+    border-radius: 24px 24px 0 0;
+    padding: 24px 20px 40px;
+    width: 100%;
+    max-width: 480px;
+    max-height: 85vh;
+    overflow-y: auto;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .settings-close-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom: 20px;
+  }
+  .settings-close-row h2{
+    font-family:'Lora', serif;
+    font-size: 20px;
+    margin: 0;
+  }
+  .close-btn{
+    background: var(--surface-2);
+    border: 1px solid var(--surface-3);
+    color: var(--text);
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor:pointer;
+    -webkit-appearance: none;
+    appearance: none;
+    padding: 0;
+  }
+  .close-btn:active{ transform: scale(0.92); }
+
+  .settings-section{
+    margin-bottom: 24px;
+  }
+  .settings-section label{
+    display:block;
+    font-size: 12px;
+    color: var(--text-dim);
+    margin: 0 0 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .voice-grid{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .voice-btn{
+    background: var(--surface-2);
+    border: 2px solid var(--surface-3);
+    color: var(--text);
+    border-radius: 12px;
+    padding: 12px 10px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor:pointer;
+    font-family:'Inter', sans-serif;
+    -webkit-appearance: none;
+    appearance: none;
+    transition: border-color .15s, background .15s;
+  }
+  .voice-btn:active{ transform: scale(0.96); }
+  .voice-btn.selected{
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .settings-note{
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 12px;
+    line-height: 1.5;
+  }
+  .status-line{
+    font-size: 12px;
+    margin-top: 10px;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .status-line.ok{ color: var(--good); }
+  .status-line.err{ color: var(--rec-red); }
+  .status-line .dot{
+    width: 6px; height: 6px; border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+  }
+
+  .chips{
+    display:flex;
+    gap:8px;
+    overflow-x:auto;
+    padding-bottom: 6px;
+    margin-bottom: 22px;
+    scrollbar-width: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .chips::-webkit-scrollbar{ display:none; }
+  .chip{
+    flex-shrink:0;
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    background: var(--surface-2);
+    border: 1px solid var(--surface-3);
+    border-radius: 999px;
+    padding: 8px 14px;
+    cursor:pointer;
+    white-space:nowrap;
+    transition: background .15s, color .15s, border-color .15s;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .chip:active{ transform: scale(0.95); }
+  .chip.active{
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .card-zone{ perspective: 1400px; margin-bottom: 18px; }
+  .card{
+    position:relative;
+    height: 260px;
+    cursor:pointer;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .card-inner{
+    position:absolute; inset:0;
+    transition: transform .5s cubic-bezier(.4,.2,.2,1);
+    transform-style: preserve-3d;
+  }
+  .card.flipped .card-inner{ transform: rotateY(180deg); }
+  .face{
+    position:absolute; inset:0;
+    backface-visibility: hidden;
+    border-radius: var(--radius);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding: 28px 26px;
+  }
+  .face-front{
+    background: linear-gradient(155deg, var(--surface-3), var(--surface));
+    border: 1px solid var(--surface-3);
+  }
+  .face-back{
+    background: linear-gradient(155deg, #3a2620, var(--surface));
+    border: 1px solid var(--accent-2);
+    transform: rotateY(180deg);
+  }
+  .face-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 14px;
+  }
+  .face-back .face-label{ color: var(--accent-2); }
+  .sentence{
+    font-family:'Lora', serif;
+    font-size: 19px;
+    line-height: 1.45;
+    color: var(--text);
+  }
+  .play-row{
+    margin-top: 18px;
+    display:flex;
+    align-items:center;
+    gap: 10px;
+  }
+  .play-btn{
+    background: var(--accent);
+    color:#211a14;
+    border:none;
+    border-radius: 999px;
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:7px;
+    font-family:'Inter', sans-serif;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .play-btn:active{ transform: scale(0.96); }
+  .play-btn.small{
+    background: transparent;
+    border: 1px solid var(--accent-2);
+    color: var(--accent-2);
+    padding: 6px 12px;
+    font-size: 11.5px;
+  }
+  .waveform{
+    display:flex;
+    align-items:center;
+    gap:3px;
+    height: 16px;
+  }
+  .waveform span{
+    width:3px;
+    height: 4px;
+    background: #211a14;
+    border-radius:2px;
+    opacity:0.55;
+  }
+  .play-btn.small .waveform span{ background: var(--accent-2); }
+  .waveform.active span{
+    animation: bar 0.9s ease-in-out infinite;
+    opacity:1;
+  }
+  .waveform span:nth-child(1){ animation-delay: 0s; }
+  .waveform span:nth-child(2){ animation-delay: .12s; }
+  .waveform span:nth-child(3){ animation-delay: .24s; }
+  .waveform span:nth-child(4){ animation-delay: .36s; }
+  .waveform span:nth-child(5){ animation-delay: .48s; }
+  @keyframes bar{
+    0%, 100% { height: 4px; }
+    50% { height: 14px; }
+  }
+
+  .transport{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom: 10px;
+  }
+  .nav-btn{
+    background: var(--surface-2);
+    border: 1px solid var(--surface-3);
+    color: var(--text);
+    width: 46px; height: 46px;
+    border-radius: 14px;
+    font-size: 18px;
+    cursor:pointer;
+    flex-shrink:0;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .nav-btn:active{ transform: scale(0.92); }
+  .flip-btn{
+    flex:1;
+    background: var(--surface-2);
+    border: 1px solid var(--surface-3);
+    color: var(--text);
+    height: 46px;
+    border-radius: 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor:pointer;
+    font-family:'Inter', sans-serif;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .flip-btn:active{ transform: scale(0.96); }
+
+  .counter-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom: 4px;
+  }
+  .counter{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .shuffle-toggle{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    background:none;
+    border:none;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .shuffle-toggle.on{ color: var(--accent); }
+  .progress-bar{
+    height: 3px;
+    background: var(--surface-2);
+    border-radius: 3px;
+    overflow:hidden;
+    margin-bottom: 26px;
+  }
+  .progress-fill{
+    height:100%;
+    background: var(--accent);
+    border-radius: 3px;
+    transition: width .25s ease;
+  }
+
+  footer{
+    text-align:center;
+    font-size: 11.5px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  :focus-visible{ outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  @media (prefers-reduced-motion: reduce){
+    .rec-dot{ animation:none; }
+    .waveform span{ animation:none !important; }
+    .card-inner{ transition:none; }
+  }
+
+  @media (max-width: 380px){
+    .sentence{ font-size: 17px; }
+    .card{ height: 280px; }
+  }
+
+  @supports (padding: max(0px)) {
+    body { padding-bottom: max(60px, env(safe-area-inset-bottom)); padding-top: max(28px, env(safe-area-inset-top)); }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div>
+      <div class="brand">
+        <span class="rec-dot"></span>
+        <span class="brand-text">Voice Memos</span>
+      </div>
+      <h1>Trainer</h1>
+    </div>
+    <button class="gear-btn" id="gearBtn" title="Settings">⚙</button>
+  </header>
+
+  <p class="intro">57 flashcards from real voice memos — everyday speech about workouts, films, weather, friends and daily plans. Listen to the English side, flip the card and check the translation.</p>
+
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="settings-panel">
+      <div class="settings-close-row">
+        <h2>Voice & Settings</h2>
+        <button class="close-btn" id="closeBtn">✕</button>
+      </div>
+
+      <div class="settings-section">
+        <label>Select Voice</label>
+        <div class="voice-grid" id="voiceGrid"></div>
+        <p class="settings-note">Powered by ElevenLabs TTS.</p>
+        <p class="status-line" id="statusLine">Checking connection…</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="chips" id="chips"></div>
+
+  <div class="card-zone">
+    <div class="card" id="card">
+      <div class="card-inner">
+        <div class="face face-front">
+          <div class="face-label">English · Track <span id="trackNumFront"></span></div>
+          <div class="sentence" id="enText"></div>
+          <div class="play-row">
+            <button class="play-btn" id="playEnBtn">
+              <span class="waveform" id="waveEn"><span></span><span></span><span></span><span></span><span></span></span>
+              Listen
+            </button>
+          </div>
+        </div>
+        <div class="face face-back">
+          <div class="face-label">Russian</div>
+          <div class="sentence" id="ruText"></div>
+          <div class="play-row">
+            <button class="play-btn small" id="playRuBtn">
+              <span class="waveform" id="waveRu"><span></span><span></span><span></span><span></span><span></span></span>
+              Слушать по-русски
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="counter-row">
+    <span class="counter" id="counter">001 / 057</span>
+    <button class="shuffle-toggle" id="shuffleBtn">🔀 Shuffle</button>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+
+  <div class="transport">
+    <button class="nav-btn" id="prevBtn" aria-label="Previous card">⏮</button>
+    <button class="flip-btn" id="flipBtn">⟲ Flip</button>
+    <button class="nav-btn" id="nextBtn" aria-label="Next card">⏭</button>
+  </div>
+
+  <footer>
+    Built from 34 audio voice memo transcriptions.<br>
+    Arrow keys / spacebar to navigate on desktop.
+  </footer>
+
+</div>
+
+<script>
+const ELEVENLABS_KEY = 'c5703792ee03127011289b83bd357cfb8c728c3c669df8c5af2d23949f8b204b';
+
+const VOICES = [
+  { id: 'EXAVITQu4vr4xnSDxMaL', name: 'Sarah', desc: 'Female · clear & warm' },
+  { id: 'TX3LPaxmHKxFdv7VOQHJ', name: 'Liam', desc: 'Male · natural' },
+  { id: 'CwhRBWXzGAHq8TQ4Fs17', name: 'Roger', desc: 'Male · deep & confident' },
+];
+
+const CARDS = [
+  // MOVIES
+  {deck:'movies', en:`I'm watching the movie "Kommersant" — right now it's one of the most popular films in Russia.`, ru:`Я смотрю фильм «Коммерсант», сейчас это один из самых популярных фильмов в России.`},
+  {deck:'movies', en:`The movie is very interesting, I recommend you watch it.`, ru:`Фильм очень интересный, я советую тебе его посмотреть.`},
+  {deck:'movies', en:`The movie is based on real events about businessmen from the nineties.`, ru:`Фильм основан на реальных событиях о бизнесменах девяностых годов.`},
+  {deck:'movies', en:`In the end, he was sent to prison.`, ru:`В итоге его посадили в тюрьму.`},
+  {deck:'movies', en:`Now I'm going to watch the movie "Moscow Does Not Believe in Tears."`, ru:`Сейчас я буду смотреть фильм «Москва слезам не верит».`},
+  {deck:'movies', en:`I found out that this movie was nominated for an Oscar.`, ru:`Я узнал, что этот фильм был номинирован на Оскар.`},
+  {deck:'movies', en:`The movie has two parts, but I've only watched the first one.`, ru:`Фильм состоит из двух частей, но я посмотрел только первую.`},
+  {deck:'movies', en:`Tonight I want to play a story-based game on PlayStation.`, ru:`Сегодня вечером я хочу поиграть в сюжетную игру на PlayStation.`},
+
+  // GYM
+  {deck:'gym', en:`Today I did a full-body workout and spent about two hours at the gym.`, ru:`Сегодня я тренировался по программе фулбади и провёл в зале около двух часов.`},
+  {deck:'gym', en:`I work on my shoulders, arms, quads, calves, and back.`, ru:`Я качаю плечи, руки, квадрицепсы, икры и спину.`},
+  {deck:'gym', en:`I train my back on the pull-up bar.`, ru:`Спину я качаю на турнике.`},
+  {deck:'gym', en:`Yesterday I did a bench press of sixty kilos for three reps, today sixty for two reps.`, ru:`Вчера я сделал жим лёжа шестьдесят на три, а сегодня шестьдесят на два.`},
+  {deck:'gym', en:`I'm going to start taking creatine to recover faster after workouts.`, ru:`Я начну пить креатин, чтобы быстрее восстанавливаться после тренировок.`},
+  {deck:'gym', en:`I heard the news that scientists found creatine might help fight cancer.`, ru:`Я слышал новость, что учёные обнаружили, что креатин может помогать в борьбе с раком.`},
+  {deck:'gym', en:`After the gym I usually eat shashlik or chicken.`, ru:`После зала я обычно ем шашлык или курицу.`},
+  {deck:'gym', en:`We went to a football match because today is the village's founding day.`, ru:`Мы поехали на футбольный матч, потому что сегодня день посёлка.`},
+
+  // FOOD
+  {deck:'food', en:`For lunch I had soup.`, ru:`На обед я съел суп.`},
+  {deck:'food', en:`I ate two sorbets: one cranberry, the other blackcurrant.`, ru:`Я съел два мороженых: одно из клюквы, другое из чёрной смородины.`},
+  {deck:'food', en:`The mushroom soup turned out really tasty, especially with toasted bread.`, ru:`Грибной суп получился очень вкусным, особенно с поджаристым хлебом.`},
+  {deck:'food', en:`My father and I picked the mushrooms for the soup ourselves.`, ru:`Грибы для супа мы с отцом собрали сами.`},
+  {deck:'food', en:`This morning I had fried eggs with coffee.`, ru:`Сегодня утром я съел яичницу с кофе.`},
+  {deck:'food', en:`In the evening I ate duck.`, ru:`Вечером я съел утку.`},
+  {deck:'food', en:`We stopped at a café for a bite before the water park.`, ru:`Мы заехали в кафе перекусить перед аквапарком.`},
+
+  // WEATHER
+  {deck:'weather', en:`The weather is cool today, and rain is expected tomorrow.`, ru:`Погода сегодня прохладная, завтра обещают дожди.`},
+  {deck:'weather', en:`The weather in Moscow and the region has been really bad for two weeks now.`, ru:`Погода в Москве и области очень плохая уже две недели.`},
+  {deck:'weather', en:`I want it to be thirty degrees so we can go swimming.`, ru:`Я хочу, чтобы было плюс тридцать градусов, чтобы можно было купаться.`},
+  {deck:'weather', en:`Today the weather should be better than yesterday.`, ru:`Сегодня погода должна быть лучше, чем вчера.`},
+  {deck:'weather', en:`The day before yesterday it rained all day, and yesterday only half the day.`, ru:`Позавчера был дождь весь день, а вчера только полдня.`},
+
+  // HOUSE
+  {deck:'house', en:`Today I'm going to clean my room because I haven't cleaned it in a while.`, ru:`Сегодня я буду убираться в комнате, потому что давно не убирался.`},
+  {deck:'house', en:`A lot of mess has built up in my room, everything's scattered around.`, ru:`У меня в комнате накопилось много грязи, всё раскидано.`},
+  {deck:'house', en:`Tomorrow I need to mow the grass.`, ru:`Завтра мне нужно покосить траву.`},
+  {deck:'house', en:`I finished mowing the grass and went to have lunch.`, ru:`Я закончил косить траву и пошёл обедать.`},
+  {deck:'house', en:`I need to fix the ATV a little because one part broke.`, ru:`Мне нужно немного починить квадроцикл, потому что сломалась одна деталь.`},
+  {deck:'house', en:`I changed the oil in the ATV's front gearbox.`, ru:`Я менял масло в переднем редукторе квадроцикла.`},
+  {deck:'house', en:`I was aligning the wheel on the ATV.`, ru:`Я выравнивал колесо на квадроцикле.`},
+
+  // FRIENDS
+  {deck:'friends', en:`In half an hour I need to pick up a friend from the train.`, ru:`Через полчаса мне нужно встретить друга с электрички.`},
+  {deck:'friends', en:`My friend's name is Roman.`, ru:`Друга зовут Роман.`},
+  {deck:'friends', en:`I picked my friend up from the train, and we went for a short ride.`, ru:`Я забрал друга с электрички, и мы немного прокатились.`},
+  {deck:'friends', en:`After the gym my friends and I are going to hang out.`, ru:`После зала мы с друзьями пойдём гулять.`},
+  {deck:'friends', en:`My friend is coming over tonight, and we'll play some FIFA.`, ru:`Вечером придёт мой друг, и мы немного поиграем в FIFA.`},
+  {deck:'friends', en:`We took a trip to the town of Yegoryevsk, about an hour's drive from us.`, ru:`Мы съездили в город Егорьевск, это час езды от нас.`},
+  {deck:'friends', en:`We dropped by the water park and stayed there for a bit.`, ru:`Мы заехали в аквапарк и посидели там немного.`},
+  {deck:'friends', en:`Tomorrow I'm planning to go to a water park in Ryazan.`, ru:`Завтра я планирую съездить в аквапарк в Рязани.`},
+
+  // SLEEP
+  {deck:'sleep', en:`I usually sleep eight hours, no matter what time I fall asleep.`, ru:`Я обычно сплю по восемь часов, неважно, в какое время засыпаю.`},
+  {deck:'sleep', en:`We had a week of military training, and there we slept exactly eight hours every night.`, ru:`У нас были военные сборы на неделю, и там мы спали ровно по восемь часов.`},
+  {deck:'sleep', en:`We went to bed at ten at night and woke up at six in the morning.`, ru:`Мы ложились в десять вечера и просыпались в шесть утра.`},
+  {deck:'sleep', en:`Since then I've gotten used to sleeping exactly eight hours.`, ru:`С тех пор я привык спать именно по восемь часов.`},
+  {deck:'sleep', en:`In the summer I sometimes slept twelve to thirteen hours without an alarm.`, ru:`Летом я иногда спал без будильника по двенадцать-тринадцать часов.`},
+  {deck:'sleep', en:`A friend told me about sleep cycles — they last roughly two and a half hours each.`, ru:`Друг рассказывал мне про фазы сна, они длятся примерно по два с половиной часа.`},
+  {deck:'sleep', en:`If you wake someone during deep sleep, it's hard for them to wake up properly.`, ru:`Если разбудить человека в глубокой фазе сна, ему будет трудно проснуться.`},
+  {deck:'sleep', en:`I'm planning to go to bed around two in the morning tonight.`, ru:`Я планирую лечь спать сегодня около двух часов ночи.`},
+
+  // MORNING
+  {deck:'morning', en:`Good morning, I just woke up.`, ru:`Доброе утро, я только что проснулся.`},
+  {deck:'morning', en:`Now I'm going to have breakfast.`, ru:`Сейчас я пойду завтракать.`},
+  {deck:'morning', en:`I have almost an hour left before my lesson, so that's plenty of time.`, ru:`У меня осталось почти час до занятия, поэтому времени достаточно.`},
+  {deck:'morning', en:`I'll lie down for a bit, rest, and watch some TikTok before the lesson.`, ru:`Я немного полежу, отдохну и посмотрю ТикТок перед занятием.`},
+  {deck:'morning', en:`There's only about thirty minutes left before the lesson starts.`, ru:`Осталось всего минут тридцать до начала занятия.`},
+  {deck:'morning', en:`After the lesson I'll need to clean my room.`, ru:`После занятия мне нужно будет убраться в комнате.`},
+];
+
+const DECKS = [
+  {id:'all', label:'All Tracks'},
+  {id:'movies', label:'01 Movies'},
+  {id:'gym', label:'02 Gym & Workouts'},
+  {id:'food', label:'03 Food'},
+  {id:'weather', label:'04 Weather'},
+  {id:'house', label:'05 House & Chores'},
+  {id:'friends', label:'06 Plans & Friends'},
+  {id:'sleep', label:'07 Sleep & Rest'},
+  {id:'morning', label:'08 Morning & Lessons'},
+];
+
+let currentDeck = 'all';
+let currentVoice = VOICES[0].id;
+let order = [];
+let pos = 0;
+let shuffleOn = false;
+let audioObj = null;
+let currentPlayingKey = null;
+const audioCache = {};
+
+const els = {
+  chips: document.getElementById('chips'),
+  card: document.getElementById('card'),
+  enText: document.getElementById('enText'),
+  ruText: document.getElementById('ruText'),
+  trackNumFront: document.getElementById('trackNumFront'),
+  counter: document.getElementById('counter'),
+  progressFill: document.getElementById('progressFill'),
+  prevBtn: document.getElementById('prevBtn'),
+  nextBtn: document.getElementById('nextBtn'),
+  flipBtn: document.getElementById('flipBtn'),
+  shuffleBtn: document.getElementById('shuffleBtn'),
+  playEnBtn: document.getElementById('playEnBtn'),
+  playRuBtn: document.getElementById('playRuBtn'),
+  waveEn: document.getElementById('waveEn'),
+  waveRu: document.getElementById('waveRu'),
+  gearBtn: document.getElementById('gearBtn'),
+  closeBtn: document.getElementById('closeBtn'),
+  modalOverlay: document.getElementById('modalOverlay'),
+  voiceGrid: document.getElementById('voiceGrid'),
+  statusLine: document.getElementById('statusLine'),
+};
+
+function pad(n){ return String(n).padStart(3,'0'); }
+
+function getDeckCards(deckId){
+  if(deckId === 'all') return CARDS.map((c,i)=>i);
+  return CARDS.map((c,i)=>i).filter(i => CARDS[i].deck === deckId);
+}
+
+function shuffleArr(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+function buildOrder(){
+  const base = getDeckCards(currentDeck);
+  order = shuffleOn ? shuffleArr(base) : base;
+  pos = 0;
+}
+
+function renderChips(){
+  els.chips.innerHTML = '';
+  DECKS.forEach(d=>{
+    const btn = document.createElement('button');
+    btn.className = 'chip' + (d.id===currentDeck ? ' active' : '');
+    btn.textContent = d.label;
+    btn.addEventListener('click', ()=>{
+      currentDeck = d.id;
+      buildOrder();
+      renderChips();
+      renderCard();
+    });
+    els.chips.appendChild(btn);
+  });
+}
+
+function renderCard(){
+  stopAudio();
+  els.card.classList.remove('flipped');
+  const idx = order[pos];
+  const card = CARDS[idx];
+  els.enText.textContent = card.en;
+  els.ruText.textContent = card.ru;
+  els.trackNumFront.textContent = pad(idx+1);
+  els.counter.textContent = `${pad(pos+1)} / ${pad(order.length)}`;
+  els.progressFill.style.width = `${((pos+1)/order.length)*100}%`;
+}
+
+function next(){
+  if(order.length===0) return;
+  pos = (pos+1) % order.length;
+  renderCard();
+}
+function prev(){
+  if(order.length===0) return;
+  pos = (pos-1+order.length) % order.length;
+  renderCard();
+}
+function flip(){
+  els.card.classList.toggle('flipped');
+}
+
+els.nextBtn.addEventListener('click', next);
+els.prevBtn.addEventListener('click', prev);
+els.flipBtn.addEventListener('click', flip);
+
+els.card.addEventListener('click', (e)=>{
+  if(e.target.closest('button')) return;
+  flip();
+});
+
+els.card.addEventListener('touchstart', (e)=>{
+  if(e.target.closest('button')) return;
+}, {passive:true});
+
+els.shuffleBtn.addEventListener('click', ()=>{
+  shuffleOn = !shuffleOn;
+  els.shuffleBtn.classList.toggle('on', shuffleOn);
+  els.shuffleBtn.textContent = shuffleOn ? '🔀 Shuffled' : '🔀 Shuffle';
+  buildOrder();
+  renderCard();
+});
+
+document.addEventListener('keydown', (e)=>{
+  if(e.target.tagName === 'INPUT') return;
+  if(e.key === 'ArrowRight') next();
+  else if(e.key === 'ArrowLeft') prev();
+  else if(e.key === ' '){ e.preventDefault(); flip(); }
+});
+
+// ========== TTS ==========
+
+function setWave(el, active){
+  el.classList.toggle('active', active);
+}
+
+function stopAudio(){
+  if(audioObj){ audioObj.pause(); audioObj = null; }
+  setWave(els.waveEn, false);
+  setWave(els.waveRu, false);
+  currentPlayingKey = null;
+}
+
+function setStatus(msg, cls){
+  if(!els.statusLine) return;
+  els.statusLine.innerHTML = '<span class="dot"></span>' + msg;
+  els.statusLine.className = 'status-line' + (cls ? ' ' + cls : '');
+}
+
+async function checkConnection(){
+  try{
+    const res = await fetch('https://api.elevenlabs.io/v1/user', {
+      headers: { 'xi-api-key': ELEVENLABS_KEY }
+    });
+    if(!res.ok) throw new Error('invalid key or request blocked (HTTP ' + res.status + ')');
+    const data = await res.json();
+    const used = data.subscription?.character_count ?? 0;
+    const limit = data.subscription?.character_limit ?? 0;
+    const left = limit - used;
+    setStatus('Connected · ' + left.toLocaleString() + ' characters left', 'ok');
+  }catch(err){
+    setStatus('Connection issue: ' + err.message, 'err');
+  }
+}
+
+async function speakText(text, lang, waveEl){
+  const cacheKey = currentVoice + '|' + text;
+
+  // Toggle: clicking the same line again stops playback
+  if(currentPlayingKey === cacheKey){
+    stopAudio();
+    return;
+  }
+
+  stopAudio();
+  setWave(waveEl, true);
+  currentPlayingKey = cacheKey;
+
+  try{
+    let url = audioCache[cacheKey];
+    if(!url){
+      const resp = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${currentVoice}`, {
+        method: 'POST',
+        headers: {
+          'xi-api-key': ELEVENLABS_KEY,
+          'Content-Type': 'application/json',
+          'Accept': 'audio/mpeg'
+        },
+        body: JSON.stringify({
+          text: text,
+          model_id: 'eleven_turbo_v2_5',
+          voice_settings: { stability: 0.45, similarity_boost: 0.8, style: 0.1 }
+        })
+      });
+      if(!resp.ok){
+        const errBody = await resp.json().catch(()=>({detail:'API error'}));
+        throw new Error(errBody.detail?.message || errBody.detail || ('HTTP ' + resp.status));
+      }
+      const blob = await resp.blob();
+      url = URL.createObjectURL(blob);
+      audioCache[cacheKey] = url;
+    }
+
+    const audio = new Audio(url);
+    audioObj = audio;
+    audio.onended = ()=>{ setWave(waveEl, false); audioObj = null; currentPlayingKey = null; };
+    audio.onerror = ()=>{ setWave(waveEl, false); audioObj = null; currentPlayingKey = null; };
+    await audio.play();
+  }catch(err){
+    console.error('TTS error:', err);
+    setWave(waveEl, false);
+    audioObj = null;
+    currentPlayingKey = null;
+    setStatus('✕ ' + err.message, 'err');
+  }
+}
+
+els.playEnBtn.addEventListener('click', (e)=>{
+  e.stopPropagation();
+  const idx = order[pos];
+  speakText(CARDS[idx].en, 'en', els.waveEn);
+});
+
+els.playRuBtn.addEventListener('click', (e)=>{
+  e.stopPropagation();
+  const idx = order[pos];
+  speakText(CARDS[idx].ru, 'ru', els.waveRu);
+});
+
+// ========== Settings Panel ==========
+
+function renderVoices(){
+  els.voiceGrid.innerHTML = '';
+  VOICES.forEach(v=>{
+    const btn = document.createElement('button');
+    btn.className = 'voice-btn' + (v.id === currentVoice ? ' selected' : '');
+    btn.innerHTML = `<strong>${v.name}</strong><br><small>${v.desc}</small>`;
+    btn.addEventListener('click', ()=>{
+      currentVoice = v.id;
+      renderVoices();
+    });
+    els.voiceGrid.appendChild(btn);
+  });
+}
+
+els.gearBtn.addEventListener('click', ()=>{
+  els.modalOverlay.classList.add('open');
+  document.body.classList.add('settings-open');
+  checkConnection();
+});
+
+els.closeBtn.addEventListener('click', ()=>{
+  els.modalOverlay.classList.remove('open');
+  document.body.classList.remove('settings-open');
+});
+
+els.modalOverlay.addEventListener('click', (e)=>{
+  if(e.target === els.modalOverlay){
+    els.modalOverlay.classList.remove('open');
+    document.body.classList.remove('settings-open');
+  }
+});
+
+// ========== Init ==========
+buildOrder();
+renderChips();
+renderCard();
+renderVoices();
+checkConnection();
+</script>
+</body>
+</html>
